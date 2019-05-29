@@ -2,6 +2,7 @@ package goscraper
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -123,7 +124,10 @@ func (scraper *Scraper) getDocument() (*Document, error) {
 	}
 	req.Header.Add("User-Agent", "GoScraper")
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{},
+	}}
+	resp, err := client.Do(req)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
