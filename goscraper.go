@@ -250,6 +250,8 @@ func (scraper *Scraper) parseDocument(doc *Document) error {
 				}
 			case "og:url":
 				doc.Preview.Link = content
+			case "image":
+				fallthrough
 			case "og:image":
 				ogImage = true
 				ogImgUrl, err := url.Parse(content)
