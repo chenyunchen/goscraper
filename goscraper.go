@@ -216,12 +216,22 @@ func (scraper *Scraper) parseDocument(doc *Document) error {
 					}
 				}
 				if len(href) > 0 && hasIcon {
-					doc.Preview.Icon = href
+					iconUrl, err := url.Parse(href)
+					if err != nil {
+						return err
+					}
+					if !iconUrl.IsAbs() {
+						iconUrl, err = url.Parse(fmt.Sprintf("%s://%s%s", scraper.Url.Scheme, scraper.Url.Host, iconUrl.Path))
+						if err != nil {
+							return err
+						}
+					}
+					doc.Preview.Icon = iconUrl.String()
 				}
 			}
 
 		case "meta":
-			if len(token.Attr) != 2 {
+			if len(token.Attr) < 2 {
 				break
 			}
 			if metaFragment(token) && scraper.EscapedFragmentUrl == nil {
@@ -239,33 +249,77 @@ func (scraper *Scraper) parseDocument(doc *Document) error {
 			}
 			switch cleanStr(property) {
 			case "og:site_name":
-				doc.Preview.Name = content
+				if len(content) != 0 {
+					doc.Preview.Name = content
+				}
+			case "application-name":
+				if doc.Preview.Name == scraper.Url.Host {
+					doc.Preview.Name = content
+				}
 			case "og:title":
-				doc.Preview.Title = content
+				if len(content) != 0 {
+					doc.Preview.Title = content
+				}
 			case "og:description":
-				doc.Preview.Description = content
+				if len(content) != 0 {
+					doc.Preview.Description = content
+				}
 			case "description":
 				if len(doc.Preview.Description) == 0 {
 					doc.Preview.Description = content
 				}
 			case "og:url":
-				doc.Preview.Link = content
-			case "image":
-				fallthrough
-			case "og:image":
-				ogImage = true
-				ogImgUrl, err := url.Parse(content)
-				if err != nil {
-					return err
+				if len(content) != 0 {
+					doc.Preview.Link = content
 				}
-				if !ogImgUrl.IsAbs() {
-					ogImgUrl, err = url.Parse(fmt.Sprintf("%s://%s%s", scraper.Url.Scheme, scraper.Url.Host, ogImgUrl.Path))
+			case "image":
+				if len(doc.Preview.Images) == 0 {
+					ogImage = true
+					ogImgUrl, err := url.Parse(content)
 					if err != nil {
 						return err
 					}
-				}
+					if !ogImgUrl.IsAbs() {
+						ogImgUrl, err = url.Parse(fmt.Sprintf("%s://%s%s", scraper.Url.Scheme, scraper.Url.Host, ogImgUrl.Path))
+						if err != nil {
+							return err
+						}
+					}
 
-				doc.Preview.Images = []string{ogImgUrl.String()}
+					doc.Preview.Images = []string{ogImgUrl.String()}
+				}
+			case "twitter:image":
+				if len(doc.Preview.Images) == 0 {
+					ogImage = true
+					ogImgUrl, err := url.Parse(content)
+					if err != nil {
+						return err
+					}
+					if !ogImgUrl.IsAbs() {
+						ogImgUrl, err = url.Parse(fmt.Sprintf("%s://%s%s", scraper.Url.Scheme, scraper.Url.Host, ogImgUrl.Path))
+						if err != nil {
+							return err
+						}
+					}
+
+					doc.Preview.Images = []string{ogImgUrl.String()}
+				}
+			case "og:image":
+				if len(doc.Preview.Images) == 0 {
+					ogImage = true
+					ogImgUrl, err := url.Parse(content)
+					if err != nil {
+						return err
+					}
+					if !ogImgUrl.IsAbs() {
+						ogImgUrl, err = url.Parse(fmt.Sprintf("%s://%s%s", scraper.Url.Scheme, scraper.Url.Host, ogImgUrl.Path))
+						if err != nil {
+							return err
+						}
+					}
+
+					doc.Preview.Images = []string{ogImgUrl.String()}
+				}
 
 			}
 
