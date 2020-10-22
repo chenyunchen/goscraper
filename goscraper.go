@@ -124,9 +124,14 @@ func (scraper *Scraper) getDocument() (*Document, error) {
 	}
 	req.Header.Add("User-Agent", "GoScraper")
 
-	client := &http.Client{Transport: &http.Transport{
+	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{},
-	}}
+	}
+	if http.DefaultClient.Transport != nil {
+		transport.Proxy = http.DefaultClient.Transport.(*http.Transport).Proxy
+	}
+
+	client := &http.Client{Transport: transport}
 	resp, err := client.Do(req)
 	if resp != nil {
 		defer resp.Body.Close()
